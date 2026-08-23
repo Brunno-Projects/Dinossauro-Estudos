@@ -342,7 +342,21 @@ async function downloadUpdatedHtml(){
  try{if(location.protocol!=='file:'){let r=await fetch(location.href.split('#')[0],{cache:'no-store'});if(r.ok)source=await r.text()}}catch(e){}
  if(!source){let clone=document.documentElement.cloneNode(true);clone.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));clone.querySelectorAll('.admin-editable').forEach(e=>e.classList.remove('admin-editable'));clone.querySelector('#adminEditToolbar')?.remove();let pg=clone.querySelector('#page');if(pg)pg.innerHTML='';let uc=clone.querySelector('#userChip');if(uc)uc.setAttribute('style','display:none');let aa=clone.querySelector('#authActions');if(aa)aa.removeAttribute('style');clone.querySelectorAll('.modalback').forEach(e=>e.classList.remove('show'));clone.querySelector('#fontPopover')?.classList.remove('show');source='<!doctype html>'+clone.outerHTML}
  const payload=JSON.stringify(textOverrides).replace(/</g,'\\u003c').replace(/>/g,'\\u003e');
- const baked=`<script id="baked-text-overrides">window.DEFAULT_TEXT_OVERRIDES={"GLOBAL|1":"IFSP Birigui","#/home|page|0":"Grupo de Estudos • IFSP Birigui"};</script>
+ const baked=`<script id="baked-text-overrides">window.DEFAULT_TEXT_OVERRIDES=${payload};<\/script>`;
+ const re=/<script id=["']baked-text-overrides["']>[\s\S]*?<\/script>/i;
+ source=re.test(source)?source.replace(re,baked):source.replace(/<\/head>/i,baked+'</head>');
+ const blob=new Blob([source],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='index.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast('HTML atualizado baixado')
+}
+const __updateAuthUIBase=updateAuthUI;
+updateAuthUI=function(){__updateAuthUIBase();ensureAdminEditorUI();ensureAdminEditButton();applyFontMode()};
+const __renderBaseFinal=render;
+render=function(){__renderBaseFinal();applyFontMode();applyTextOverrides();ensureAdminEditButton()};
+loadTextOverrides();
+document.addEventListener('input',e=>{if(!adminEditMode||!isAdminUser())return;let el=e.target.closest?.('[data-admin-text-key][contenteditable="true"]');if(!el)return;textOverrides[el.dataset.adminTextKey]=el.innerHTML;saveTextOverrides()});
+document.addEventListener('click',e=>{if(e.target.closest?.('#fontControl'))return;$('#fontPopover')?.classList.remove('show')});
+document.addEventListener('click',e=>{if(!adminEditMode||!isAdminUser())return;let el=e.target.closest?.('[contenteditable="true"]');if(el){e.stopPropagation()}},true);
+window.addEventListener('hashchange',render);window.addEventListener('DOMContentLoaded',()=>{$('#globalSearch').addEventListener('input',e=>search(e.target.value));document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearch();closeModal('authModal');closeModal('updateModal');closeModal('adminEditModal')}if(e.key==='Enter'&&$('#authModal')?.classList.contains('show'))submitAuth()});updateAuthUI();updateBell();render()});
+</script>
 <script id="v01-patch">
 // ===== V.0.1 =====
 const V01_LEVELS={
